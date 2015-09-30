@@ -16,9 +16,9 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var requests []*request
+		var requests []*reqfield
 		if err := xml.NewDecoder(r.Body).Decode(&requests); err == nil {
-			responses := make([]*response, 0)
+			responses := make([]*respfield, 0)
 
 			for _, req := range requests {
 				responses = append(responses, handle(req))
@@ -35,8 +35,8 @@ func main() {
 	log.Fatalln(http.ListenAndServe(addr, nil))
 }
 
-func handle(req *request) *response {
-	resp := &response{Id: req.Id}
+func handle(req *reqfield) *respfield {
+	resp := &respfield{Index: req.Index}
 	if len(req.Col)*len(req.Row) == 0 || len(req.Col) != len(req.Row) {
 		resp.Status = 1
 		return resp
@@ -49,14 +49,14 @@ func handle(req *request) *response {
 	return resp
 }
 
-type request struct {
-	Id  string    `xml:"id,attr"`   // Request UUID
-	Col []float64 `xml:"col>value"` // Column of matrix A
-	Row []float64 `xml:"row>value"` // Row of matrix B
+type reqfield struct {
+	Index int       `xml:"index,attr"`    // Field index
+	Col   []float64 `xml:"src>col>value"` // Column of matrix A
+	Row   []float64 `xml:"src>row>value"` // Row of matrix B
 }
 
-type response struct {
-	Id     string  `xml:"id,attr"` // Response UUID
-	Value  float64 `xml:"value"`   // Result
-	Status int     `xml:"status"`  // Response status
+type respfield struct {
+	Index  int     `xml:"index,attr"`   // Field index
+	Value  float64 `xml:"result>value"` // Result
+	Status int     `xml:"status"`       // Response status
 }

@@ -8,8 +8,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-
-	"github.com/satori/go.uuid"
 )
 
 type ErrMultiply struct {
@@ -46,45 +44,47 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 		return nil, ErrMultiplyColsRowsNumber
 	}
 
-	count := A.CountRows() * B.CountCols()
-	cin := make(chan *request)
-	cout := c.initSession(cin, count)
-	positions := map[string]int{}
+	var (
+		cin   = make(chan *reqfield)
+		count = A.CountRows() * B.CountCols()
+		cout  = c.initSession(cin, count)
+	)
 
 	for i := 0; i < A.CountRows(); i++ {
 		for j := 0; j < B.CountCols(); j++ {
-			rid := uuid.NewV4().String()
-			positions[rid] = i*B.CountCols() + j
-			cin <- &request{rid, A.GetRow(i), B.GetCol(j)}
+			cin <- &reqfield{i*B.CountCols() + j, A.GetRow(i), B.GetCol(j)}
 		}
 	}
 
 	close(cin)
 
-	res := NewEmptyMatrix(A.CountRows(), B.CountCols())
-	var err error
+	var (
+		err      error
+		elements = make([]float64, count)
+	)
 
-	for resp := range cout {
-		if resp.Err() == nil {
-			i, j := res.CalcIJ(positions[resp.Id])
-			res.SetElement(i, j, resp.Value)
+	for field := range cout {
+		if field.Err() == nil {
+			if field.Index < count {
+				elements[field.Index] = field.Value
+			}
 		} else {
-			err = resp.Err()
+			err = field.Err()
 		}
 	}
 
-	return res, err
+	return NewMatrixFromSlice(A.CountRows(), B.CountCols(), elements), err
 }
 
-func (c *Client) initSession(cin <-chan *request, count int) <-chan *response {
+func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield {
 	serverList := c.getServers(c.calculateServerCount(count))
 
 	var wg sync.WaitGroup
-	сout := make(chan *response)
+	сout := make(chan *respfield)
 
-	output := func(c <-chan *response) {
-		for n := range c {
-			сout <- n
+	output := func(ch <-chan *respfield) {
+		for resp := range ch {
+			сout <- resp
 		}
 		wg.Done()
 	}
@@ -143,27 +143,27 @@ type server struct {
 	addr net.Addr
 }
 
-func (s *server) startSession(cin <-chan *request) <-chan *response {
-	cout := make(chan *response)
+func (s *server) startSession(cin <-chan *reqfield) <-chan *respfield {
+	cout := make(chan *respfield)
 	go func() {
 		var buff bytes.Buffer
 
 		buff.WriteString(xml.Header)
 
 		enc := xml.NewEncoder(&buff)
-		for req := range cin {
-			enc.Encode(req)
+		for reqf := range cin {
+			enc.Encode(reqf)
 		}
 
-		hreq, _ := http.NewRequest("GET", s.addr.String(), &buff)
+		httpreq, _ := http.NewRequest("GET", s.addr.String(), &buff)
 		client := &http.Client{}
-		hresp, _ := client.Do(hreq)
+		httpresp, _ := client.Do(httpreq)
 
-		var responses []*response
-		xml.NewDecoder(hresp.Body).Decode(&responses)
+		var respfields []*respfield
+		xml.NewDecoder(httpresp.Body).Decode(&respfields)
 
-		for _, resp := range responses {
-			cout <- resp
+		for _, respf := range respfields {
+			cout <- respf
 		}
 
 		close(cout)
@@ -172,25 +172,24 @@ func (s *server) startSession(cin <-chan *request) <-chan *response {
 	return cout
 }
 
-type request struct {
-	Id  string    `xml:"id,attr"`   // Request UUID
-	Col []float64 `xml:"col>value"` // Column of matrix A
-	Row []float64 `xml:"row>value"` // Row of matrix B
+type reqfield struct {
+	Index int       `xml:"index,attr"`    // Field index
+	Col   []float64 `xml:"src>col>value"` // Column of matrix A
+	Row   []float64 `xml:"src>row>value"` // Row of matrix B
 }
 
-type response struct {
-	Id     string  `xml:"id,attr"` // Response UUID
-	Value  float64 `xml:"value"`   // Result
-	Status int     `xml:"status"`  // Response status
+type respfield struct {
+	Index  int     `xml:"index,attr"`   // Field index
+	Value  float64 `xml:"result>value"` // Result
+	Status int     `xml:"status"`       // Response status
 }
 
-func (r *response) Err() error {
+func (r *respfield) Err() error {
 	switch r.Status {
+	case 0:
+		return nil
 	case 1:
-		return errors.New("invalid number of values")
-	default:
-		return errors.New("unknown status")
+		return errors.New("invalid number of source values")
 	}
-
-	return nil
+	return errors.New("unknown status")
 }

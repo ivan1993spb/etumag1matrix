@@ -33,7 +33,7 @@ func (m *Matrix) CountCols() int {
 }
 
 func (m *Matrix) GetElement(i int, j int) float64 {
-	if offset := i*m.cols + j; len(m.elements) > offset {
+	if offset := m.CalcIndex(i, j); len(m.elements) > offset {
 		return m.elements[offset]
 	}
 
@@ -63,7 +63,7 @@ func (m *Matrix) GetCol(j int) []float64 {
 }
 
 func (m *Matrix) SetElement(i int, j int, v float64) {
-	if offset := i*m.cols + j; cap(m.elements) > offset {
+	if offset := m.CalcIndex(i, j); cap(m.elements) > offset {
 		if len(m.elements) <= offset {
 			m.elements = append(m.elements, make([]float64, offset-len(m.elements)+1)...)
 		}
@@ -74,6 +74,10 @@ func (m *Matrix) SetElement(i int, j int, v float64) {
 
 func (m *Matrix) CalcIJ(n int) (int, int) {
 	return (n - n%m.cols) / m.rows, n % m.cols
+}
+
+func (m *Matrix) CalcIndex(i, j int) int {
+	return i*m.cols + j
 }
 
 func (m *Matrix) String() (output string) {
