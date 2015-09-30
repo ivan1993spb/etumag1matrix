@@ -66,7 +66,7 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 
 	for resp := range cout {
 		if resp.Err() == nil {
-			i, j := res.CalcCoord(positions[resp.Id])
+			i, j := res.CalcIJ(positions[resp.Id])
 			res.SetElement(i, j, resp.Value)
 		} else {
 			err = resp.Err()
@@ -173,15 +173,15 @@ func (s *server) startSession(cin <-chan *request) <-chan *response {
 }
 
 type request struct {
-	Id  string    `xml:"id"`        // Request UUID
+	Id  string    `xml:"id,attr"`   // Request UUID
 	Col []float64 `xml:"col>value"` // Column of matrix A
 	Row []float64 `xml:"row>value"` // Row of matrix B
 }
 
 type response struct {
-	Id     string  `xml:"id"`
-	Value  float64 `xml:"value"`
-	Status int     `xml:"status"`
+	Id     string  `xml:"id,attr"` // Response UUID
+	Value  float64 `xml:"value"`   // Result
+	Status int     `xml:"status"`  // Response status
 }
 
 func (r *response) Err() error {

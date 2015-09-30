@@ -1,11 +1,11 @@
 package etumag1matrix
 
+import "fmt"
+
 type Matrix struct {
-	// Number of rows
-	rows int
-	// Number of columns
-	cols int
-	// Matrix stored as a flat array: Aij = elements[i*cols + j]
+	rows int // Number of rows
+	cols int // Number of columns
+	// Matrix stored as a float array: Aij = elements[i*cols + j]
 	elements []float64
 }
 
@@ -41,13 +41,23 @@ func (m *Matrix) GetElement(i int, j int) float64 {
 }
 
 func (m *Matrix) GetRow(i int) []float64 {
-	return m.elements[i*m.cols : i*m.cols+m.rows]
+	if i >= m.rows {
+		return nil
+	}
+	var row = make([]float64, m.cols)
+	for j := 0; j < m.cols; j++ {
+		row[j] = m.GetElement(i, j)
+	}
+	return row
 }
 
 func (m *Matrix) GetCol(j int) []float64 {
-	col := make([]float64, m.rows)
+	if j >= m.cols {
+		return nil
+	}
+	var col = make([]float64, m.rows)
 	for i := 0; i < m.rows; i++ {
-		col[i] = m.elements[i*m.cols+j]
+		col[i] = m.GetElement(i, j)
 	}
 	return col
 }
@@ -62,6 +72,16 @@ func (m *Matrix) SetElement(i int, j int, v float64) {
 	}
 }
 
-func (m *Matrix) CalcCoord(n int) (int, int) {
-	return n % m.cols, (n - n%m.rows) / m.rows
+func (m *Matrix) CalcIJ(n int) (int, int) {
+	return (n - n%m.cols) / m.rows, n % m.cols
+}
+
+func (m *Matrix) String() (output string) {
+	for n := 0; n < m.cols*m.rows; n++ {
+		if n%m.cols == 0 {
+			output += "\n"
+		}
+		output += fmt.Sprintf("%10.2f", m.GetElement(m.CalcIJ(n)))
+	}
+	return
 }
