@@ -87,6 +87,9 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 		wg     sync.WaitGroup
 		сout   = make(chan *respfield)
 	)
+	if scount == 0 {
+		return nil
+	}
 
 	wg.Add(scount)
 	addrs := c.getAddrs(scount)
