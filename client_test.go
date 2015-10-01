@@ -48,53 +48,53 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestGetServers(t *testing.T) {
+func TestGetAddrs(t *testing.T) {
 	client, err := NewClient(much_good_addrs...)
 	if err != nil {
 		t.Error("NewClient fail:", err)
 	}
-	if len(client.getServers(0)) > 0 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(0)) > 0 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(100)) != len(client.addrs) {
-		t.Error("getServers fail")
+	if len(client.getAddrs(100)) != len(client.addrs) {
+		t.Error("getAddrs fail")
 	}
 
 	if client.cursor != 0 {
 		t.Error("cursor error")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 3 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 3 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 6 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 6 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 9 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 9 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(1)) != 1 || client.cursor != 0 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(1)) != 1 || client.cursor != 0 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(4)) != 4 || client.cursor != 4 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(4)) != 4 || client.cursor != 4 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 7 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 7 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(2)) != 2 || client.cursor != 9 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(2)) != 2 || client.cursor != 9 {
+		t.Error("getAddrs fail")
 	}
 
-	if len(client.getServers(3)) != 3 || client.cursor != 2 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 2 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 5 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 5 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 8 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 8 {
+		t.Error("getAddrs fail")
 	}
-	if len(client.getServers(3)) != 3 || client.cursor != 1 {
-		t.Error("getServers fail")
+	if len(client.getAddrs(3)) != 3 || client.cursor != 1 {
+		t.Error("getAddrs fail")
 	}
 }

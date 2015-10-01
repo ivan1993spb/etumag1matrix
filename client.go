@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -18,22 +19,20 @@ func (err *ErrMultiply) Error() string {
 	return "multiplying error: " + err.str
 }
 
-var ErrMultiplyColsRowsNumber = &ErrMultiply{"number of columns in A is not equal to the number of rows in B"}
-
 type Client struct {
-	servers []*server
-	cursor  int
+	addrs  []net.Addr
+	cursor int
 }
 
-func NewClient(servers ...string) (*Client, error) {
-	client := &Client{make([]*server, len(servers)), 0}
+func NewClient(addrs ...string) (*Client, error) {
+	client := &Client{make([]net.Addr, len(addrs)), 0}
 
-	for i, server := range servers {
-		addr, err := net.ResolveTCPAddr("tcp", server)
+	for i := range addrs {
+		addr, err := net.ResolveTCPAddr("tcp", addrs[i])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot create client: %s", err)
 		}
-		client.servers[i].addr = addr
+		client.addrs[i] = addr
 	}
 
 	return client, nil
@@ -41,14 +40,15 @@ func NewClient(servers ...string) (*Client, error) {
 
 func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 	if A.CountCols() != B.CountRows() {
-		return nil, ErrMultiplyColsRowsNumber
+		return nil, &ErrMultiply{"number of columns in A is not equal to the number of rows in B"}
 	}
 
 	var (
 		cin   = make(chan *reqfield)
 		count = A.CountRows() * B.CountCols()
-		cout  = c.initSession(cin, count)
 	)
+
+	cout := c.initSession(cin, count)
 
 	for i := 0; i < A.CountRows(); i++ {
 		for j := 0; j < B.CountCols(); j++ {
@@ -59,7 +59,7 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 	close(cin)
 
 	var (
-		err      error
+		err      error // First happened error
 		elements = make([]float64, count)
 	)
 
@@ -67,9 +67,11 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 		if field.Err() == nil {
 			if field.Index < count {
 				elements[field.Index] = field.Value
+			} else if err == nil {
+				err = &ErrMultiply{"server return invalid field index"}
 			}
-		} else {
-			err = field.Err()
+		} else if err == nil {
+			err = &ErrMultiply{field.Err().Error()}
 		}
 	}
 
@@ -77,22 +79,41 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 }
 
 func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield {
-	serverList := c.getServers(c.calculateServerCount(count))
+	var (
+		scount = c.calculateServerCount(count)
+		wg     sync.WaitGroup
+		сout   = make(chan *respfield)
+	)
 
-	var wg sync.WaitGroup
-	сout := make(chan *respfield)
+	wg.Add(scount)
+	addrs := c.getAddrs(scount)
 
-	output := func(ch <-chan *respfield) {
-		for resp := range ch {
-			сout <- resp
+	sendReceive := func(addr net.Addr) {
+		var buff bytes.Buffer
+
+		buff.WriteString(xml.Header)
+		enc := xml.NewEncoder(&buff)
+
+		for reqfld := range cin {
+			enc.Encode(reqfld)
 		}
+
+		httpreq, _ := http.NewRequest("GET", addr.String(), &buff)
+		client := &http.Client{}
+		httpresp, _ := client.Do(httpreq)
+
+		var respfields []*respfield
+		xml.NewDecoder(httpresp.Body).Decode(&respfields)
+
+		for _, respf := range respfields {
+			сout <- respf
+		}
+
 		wg.Done()
 	}
-	wg.Add(len(serverList))
 
-	for _, server := range serverList {
-		scout := server.startSession(cin)
-		go output(scout)
+	for _, addr := range addrs {
+		go sendReceive(addr)
 	}
 
 	go func() {
@@ -103,23 +124,26 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 	return сout
 }
 
-func (c *Client) getServers(count int) []*server {
+func (c *Client) getAddrs(count int) []net.Addr {
 	if count < 1 {
 		return nil
 	}
-	if count >= len(c.servers) {
-		return c.servers
+	if count >= len(c.addrs) {
+		return c.addrs
 	}
-	var ncurs int
-	defer func() {
-		c.cursor = ncurs - 1
-	}()
-	if c.cursor+count < len(c.servers) {
-		ncurs = c.cursor + count
-		return c.servers[c.cursor:ncurs]
+
+	var cursor = c.cursor
+
+	if cursor+count <= len(c.addrs) {
+		c.cursor = cursor + count
+		if c.cursor == len(c.addrs) {
+			c.cursor = 0
+		}
+		return c.addrs[cursor : cursor+count]
 	}
-	ncurs = c.cursor + count - len(c.servers)
-	return append(c.servers[c.cursor:], c.servers[:ncurs]...)
+
+	c.cursor = cursor + count - len(c.addrs)
+	return append(c.addrs[cursor:], c.addrs[:c.cursor]...)
 }
 
 func (c *Client) calculateServerCount(calcCount int) int {
@@ -127,8 +151,8 @@ func (c *Client) calculateServerCount(calcCount int) int {
 		return 0
 	}
 	count := int(math.Floor(math.Log10(float64(calcCount))))
-	if count > len(c.servers) {
-		return len(c.servers)
+	if count > len(c.addrs) {
+		return len(c.addrs)
 	}
 	return count
 }
@@ -137,39 +161,6 @@ func (c *Client) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix,
 	go func() {
 		callback(c.MultiplyMatrix(A, B))
 	}()
-}
-
-type server struct {
-	addr net.Addr
-}
-
-func (s *server) startSession(cin <-chan *reqfield) <-chan *respfield {
-	cout := make(chan *respfield)
-	go func() {
-		var buff bytes.Buffer
-
-		buff.WriteString(xml.Header)
-
-		enc := xml.NewEncoder(&buff)
-		for reqf := range cin {
-			enc.Encode(reqf)
-		}
-
-		httpreq, _ := http.NewRequest("GET", s.addr.String(), &buff)
-		client := &http.Client{}
-		httpresp, _ := client.Do(httpreq)
-
-		var respfields []*respfield
-		xml.NewDecoder(httpresp.Body).Decode(&respfields)
-
-		for _, respf := range respfields {
-			cout <- respf
-		}
-
-		close(cout)
-	}()
-
-	return cout
 }
 
 type reqfield struct {
