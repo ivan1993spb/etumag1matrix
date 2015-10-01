@@ -10,6 +10,8 @@ import (
 const STATUS_INVALID_INPUT = 1
 
 func main() {
+	log.Println("starting server")
+
 	var addr string
 	flag.StringVar(&addr, "http", ":8080", "server address")
 	flag.Parse()
@@ -18,16 +20,18 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var reqfields packreqfield
+		log.Println("accepted connection")
+
+		var reqfields *packreqfield
 		if err := xml.NewDecoder(r.Body).Decode(&reqfields); err == nil {
 			respfields := &packrespfield{Respfields: make([]*respfield, 0)}
+			log.Println("fields:", len(reqfields.Reqfields))
 
 			for _, req := range reqfields.Reqfields {
 				respfields.Respfields = append(respfields.Respfields, handle(req))
 			}
 
 			xml.NewEncoder(w).Encode(respfields)
-
 		} else {
 			log.Println(err)
 			http.Error(w, "Bad request", http.StatusBadRequest)
@@ -52,8 +56,8 @@ func handle(req *reqfield) *respfield {
 }
 
 type packreqfield struct {
-	XMLName   xml.Name `xml:"reqfields"`
-	Reqfields []*reqfield
+	XMLName   xml.Name    `xml:"reqfields"`
+	Reqfields []*reqfield `xml:"reqfield"`
 }
 
 type reqfield struct {
@@ -63,8 +67,8 @@ type reqfield struct {
 }
 
 type packrespfield struct {
-	XMLName    xml.Name `xml:"respfields"`
-	Respfields []*respfield
+	XMLName    xml.Name     `xml:"respfields"`
+	Respfields []*respfield `xml:"respfield"`
 }
 
 type respfield struct {

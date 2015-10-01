@@ -49,7 +49,6 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 	)
 
 	cout := c.initSession(cin, count)
-
 	for i := 0; i < A.CountRows(); i++ {
 		for j := 0; j < B.CountCols(); j++ {
 			cin <- &reqfield{i*B.CountCols() + j, A.GetRow(i), B.GetCol(j)}
@@ -93,6 +92,7 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 	addrs := c.getAddrs(scount)
 
 	sendReceive := func(addr net.Addr) {
+		defer wg.Done()
 		var buff bytes.Buffer
 
 		buff.WriteString(xml.Header)
@@ -105,17 +105,23 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 
 		buff.WriteString("</reqfields>")
 
-		httpreq, _ := http.NewRequest("GET", addr.String(), &buff)
-		httpresp, _ := http.DefaultClient.Do(httpreq)
-
-		var respfields packrespfield
-		xml.NewDecoder(httpresp.Body).Decode(&respfields)
-
-		for _, respfld := range respfields.Respfields {
-			сout <- respfld
+		httpreq, err := http.NewRequest("GET", "http://"+addr.String(), &buff)
+		if err != nil {
+			return
+		}
+		httpresp, err := http.DefaultClient.Do(httpreq)
+		if err != nil {
+			return
 		}
 
-		wg.Done()
+		var respfields *packrespfield
+		err = xml.NewDecoder(httpresp.Body).Decode(&respfields)
+
+		if err == nil {
+			for _, respfld := range respfields.Respfields {
+				сout <- respfld
+			}
+		}
 	}
 
 	for _, addr := range addrs {
@@ -156,7 +162,9 @@ func (c *Client) calculateServerCount(calcCount int) int {
 	if calcCount < 1 {
 		return 0
 	}
-	count := int(math.Floor(math.Log10(float64(calcCount))))
+
+	count := int(math.Ceil(math.Log10(float64(calcCount))))
+
 	if count > len(c.addrs) {
 		return len(c.addrs)
 	}
@@ -170,8 +178,8 @@ func (c *Client) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix,
 }
 
 type packreqfield struct {
-	XMLName   xml.Name `xml:"reqfields"`
-	Reqfields []*reqfield
+	XMLName   xml.Name    `xml:"reqfields"`
+	Reqfields []*reqfield `xml:"reqfield"`
 }
 
 type reqfield struct {
@@ -181,8 +189,8 @@ type reqfield struct {
 }
 
 type packrespfield struct {
-	XMLName    xml.Name `xml:"respfields"`
-	Respfields []*respfield
+	XMLName    xml.Name     `xml:"respfields"`
+	Respfields []*respfield `xml:"respfield"`
 }
 
 type respfield struct {
