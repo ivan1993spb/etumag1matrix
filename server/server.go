@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+const STATUS_INVALID_INPUT = 1
+
 func main() {
 	var addr string
 	flag.StringVar(&addr, "http", ":8080", "server address")
@@ -16,15 +18,15 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var requests []*reqfield
-		if err := xml.NewDecoder(r.Body).Decode(&requests); err == nil {
-			responses := make([]*respfield, 0)
+		var reqfields packreqfield
+		if err := xml.NewDecoder(r.Body).Decode(&reqfields); err == nil {
+			respfields := &packrespfield{Respfields: make([]*respfield, 0)}
 
-			for _, req := range requests {
-				responses = append(responses, handle(req))
+			for _, req := range reqfields.Reqfields {
+				respfields.Respfields = append(respfields.Respfields, handle(req))
 			}
 
-			xml.NewEncoder(w).Encode(responses)
+			xml.NewEncoder(w).Encode(respfields)
 
 		} else {
 			log.Println(err)
@@ -38,7 +40,7 @@ func main() {
 func handle(req *reqfield) *respfield {
 	resp := &respfield{Index: req.Index}
 	if len(req.Col)*len(req.Row) == 0 || len(req.Col) != len(req.Row) {
-		resp.Status = 1
+		resp.Status = STATUS_INVALID_INPUT
 		return resp
 	}
 
@@ -49,10 +51,20 @@ func handle(req *reqfield) *respfield {
 	return resp
 }
 
+type packreqfield struct {
+	XMLName   xml.Name `xml:"reqfields"`
+	Reqfields []*reqfield
+}
+
 type reqfield struct {
 	Index int       `xml:"index,attr"`    // Field index
 	Col   []float64 `xml:"src>col>value"` // Column of matrix A
 	Row   []float64 `xml:"src>row>value"` // Row of matrix B
+}
+
+type packrespfield struct {
+	XMLName    xml.Name `xml:"respfields"`
+	Respfields []*respfield
 }
 
 type respfield struct {

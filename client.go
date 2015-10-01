@@ -75,6 +75,10 @@ func (c *Client) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 		}
 	}
 
+	if len(elements) == 0 && err == nil {
+		return nil, &ErrMultiply{"data was not received"}
+	}
+
 	return NewMatrixFromSlice(A.CountRows(), B.CountCols(), elements), err
 }
 
@@ -92,21 +96,23 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 		var buff bytes.Buffer
 
 		buff.WriteString(xml.Header)
+		buff.WriteString("<reqfields>")
 		enc := xml.NewEncoder(&buff)
 
 		for reqfld := range cin {
 			enc.Encode(reqfld)
 		}
 
-		httpreq, _ := http.NewRequest("GET", addr.String(), &buff)
-		client := &http.Client{}
-		httpresp, _ := client.Do(httpreq)
+		buff.WriteString("</reqfields>")
 
-		var respfields []*respfield
+		httpreq, _ := http.NewRequest("GET", addr.String(), &buff)
+		httpresp, _ := http.DefaultClient.Do(httpreq)
+
+		var respfields packrespfield
 		xml.NewDecoder(httpresp.Body).Decode(&respfields)
 
-		for _, respf := range respfields {
-			сout <- respf
+		for _, respfld := range respfields.Respfields {
+			сout <- respfld
 		}
 
 		wg.Done()
@@ -163,10 +169,20 @@ func (c *Client) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix,
 	}()
 }
 
+type packreqfield struct {
+	XMLName   xml.Name `xml:"reqfields"`
+	Reqfields []*reqfield
+}
+
 type reqfield struct {
 	Index int       `xml:"index,attr"`    // Field index
 	Col   []float64 `xml:"src>col>value"` // Column of matrix A
 	Row   []float64 `xml:"src>row>value"` // Row of matrix B
+}
+
+type packrespfield struct {
+	XMLName    xml.Name `xml:"respfields"`
+	Respfields []*respfield
 }
 
 type respfield struct {
@@ -175,12 +191,17 @@ type respfield struct {
 	Status int     `xml:"status"`       // Response status
 }
 
+const (
+	STATUS_OK            = 0
+	STATUS_INVALID_INPUT = 1
+)
+
 func (r *respfield) Err() error {
 	switch r.Status {
-	case 0:
+	case STATUS_OK:
 		return nil
-	case 1:
-		return errors.New("invalid number of source values")
+	case STATUS_INVALID_INPUT:
+		return errors.New("invalid input")
 	}
 	return errors.New("unknown status")
 }

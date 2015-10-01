@@ -1,9 +1,6 @@
 package etumag1matrix
 
-import (
-	// "fmt"
-	"testing"
-)
+import "testing"
 
 var (
 	bad_addrs = []string{
