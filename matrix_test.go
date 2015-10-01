@@ -1,8 +1,6 @@
 package etumag1matrix
 
-import (
-	"testing"
-)
+import "testing"
 
 var emptyMatrix10_12 = NewEmptyMatrix(10, 12)
 
