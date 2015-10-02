@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	COLS = 50
-	ROWS = 50
+	COLS = 100
+	ROWS = 100
 )
 
 func main() {
@@ -33,13 +33,16 @@ func main() {
 	fmt.Println("try to multiply matrix")
 
 	start := time.Now()
-	_, err = client.MultiplyMatrix(matrix, matrix)
+	matrix2, err := client.MultiplyMatrix(matrix, matrix)
 	fmt.Println("time:", time.Since(start))
 
 	if err != nil {
 		fmt.Println("error:", err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
+	if matrix2.CountRows()*matrix2.CountCols() <= 100 {
+		fmt.Println(matrix2)
+	}
 	fmt.Println("SUCCESS")
 }

@@ -99,14 +99,15 @@ func (c *Client) initSession(cin <-chan *reqfield, count int) <-chan *respfield 
 		var buff bytes.Buffer
 
 		buff.WriteString(xml.Header)
-		buff.WriteString("<reqfields>")
+		buff.WriteString(`<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>`)
+
 		enc := xml.NewEncoder(&buff)
 
 		for reqfld := range cin {
 			enc.Encode(reqfld)
 		}
 
-		buff.WriteString("</reqfields>")
+		buff.WriteString(`</soap:Body></soap:Envelope>`)
 
 		httpreq, err := http.NewRequest("GET", "http://"+addr.String(), &buff)
 		if err != nil {
@@ -181,8 +182,8 @@ func (c *Client) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix,
 }
 
 type packreqfield struct {
-	XMLName   xml.Name    `xml:"reqfields"`
-	Reqfields []*reqfield `xml:"reqfield"`
+	XMLName   xml.Name    `xml:"Envelope"`
+	Reqfields []*reqfield `xml:"Body>reqfield"`
 }
 
 type reqfield struct {
@@ -192,8 +193,8 @@ type reqfield struct {
 }
 
 type packrespfield struct {
-	XMLName    xml.Name     `xml:"respfields"`
-	Respfields []*respfield `xml:"respfield"`
+	XMLName    xml.Name     `xml:"Envelope"`
+	Respfields []*respfield `xml:"Body>respfield"`
 }
 
 type respfield struct {

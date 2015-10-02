@@ -56,8 +56,8 @@ func handle(req *reqfield) *respfield {
 }
 
 type packreqfield struct {
-	XMLName   xml.Name    `xml:"reqfields"`
-	Reqfields []*reqfield `xml:"reqfield"`
+	XMLName   xml.Name    `xml:"Envelope"`
+	Reqfields []*reqfield `xml:"Body>reqfield"`
 }
 
 type reqfield struct {
@@ -67,8 +67,8 @@ type reqfield struct {
 }
 
 type packrespfield struct {
-	XMLName    xml.Name     `xml:"respfields"`
-	Respfields []*respfield `xml:"respfield"`
+	XMLName    xml.Name     `xml:"soap:Envelope"`
+	Respfields []*respfield `xml:"soap:Body>respfield"`
 }
 
 type respfield struct {
