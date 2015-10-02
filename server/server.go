@@ -25,7 +25,7 @@ func main() {
 		var reqfields *packreqfield
 		if err := xml.NewDecoder(r.Body).Decode(&reqfields); err == nil {
 			respfields := &packrespfield{Respfields: make([]*respfield, 0)}
-			log.Println("fields:", len(reqfields.Reqfields))
+			log.Println("received fields:", len(reqfields.Reqfields))
 
 			for _, req := range reqfields.Reqfields {
 				respfields.Respfields = append(respfields.Respfields, handle(req))

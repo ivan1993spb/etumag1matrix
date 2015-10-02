@@ -203,15 +203,15 @@ type respfield struct {
 }
 
 const (
-	STATUS_OK            = 0
-	STATUS_INVALID_INPUT = 1
+	_STATUS_OK            = 0
+	_STATUS_INVALID_INPUT = 1
 )
 
 func (r *respfield) Err() error {
 	switch r.Status {
-	case STATUS_OK:
+	case _STATUS_OK:
 		return nil
-	case STATUS_INVALID_INPUT:
+	case _STATUS_INVALID_INPUT:
 		return errors.New("invalid input")
 	}
 	return errors.New("unknown status")
