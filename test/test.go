@@ -30,7 +30,12 @@ func main() {
 	matrix := etumag1matrix.NewMatrixFromSlice(COLS, ROWS, elements)
 	client, err := etumag1matrix.NewClient(os.Args[1:]...)
 
+	fmt.Println("try to multiply matrix")
+
+	start := time.Now()
 	_, err = client.MultiplyMatrix(matrix, matrix)
+	fmt.Println("time:", time.Since(start))
+
 	if err != nil {
 		fmt.Println("error:", err)
 		os.Exit(0)
