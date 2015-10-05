@@ -12,6 +12,14 @@ var matrixFromSlice5_6 = NewMatrixFromSlice(5, 6, []float64{
 	25, 26, 27, 28, 29, 30,
 })
 
+var matrixFromSlice6_5 = NewMatrixFromSlice(6, 5, []float64{
+	1, 2, 3, 4, 5, 6,
+	7, 8, 9, 10, 11, 12,
+	13, 14, 15, 16, 17, 18,
+	19, 20, 21, 22, 23, 24,
+	25, 26, 27, 28, 29, 30,
+})
+
 var col_6_5_2 = []float64{3, 9, 15, 21, 27}
 
 var row_6_5_3 = []float64{19, 20, 21, 22, 23, 24}
@@ -117,6 +125,12 @@ func compareFloat64Slices(a, b []float64) bool {
 
 func TestCalcIJ(t *testing.T) {
 	for n := 0; n < len(matrixFromSlice5_6.Elements); n++ {
+		if matrixFromSlice5_6.Elements[n] != matrixFromSlice5_6.GetElement(matrixFromSlice5_6.CalcIJ(n)) {
+			t.Error("matrix.CalcIJ(n)")
+		}
+	}
+
+	for n := 0; n < len(matrixFromSlice6_5.Elements); n++ {
 		if matrixFromSlice5_6.Elements[n] != matrixFromSlice5_6.GetElement(matrixFromSlice5_6.CalcIJ(n)) {
 			t.Error("matrix.CalcIJ(n)")
 		}

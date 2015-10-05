@@ -14,6 +14,27 @@ const (
 	ROWS = 20
 )
 
+var matrixFromSlice5 = etumag1matrix.NewMatrixFromSlice(3, 6, []float64{
+	1, 2, 3, 4, 5, 6,
+	0, 0, 0, 0, 0, 0,
+	7, 8, 9, 10, 11, 12,
+})
+
+var matrixFromSlice6 = etumag1matrix.NewMatrixFromSlice(6, 2, []float64{
+	1, 1,
+	2, 2,
+	3, 3,
+	3, 3,
+	2, 2,
+	1, 1,
+})
+
+var res3 = etumag1matrix.NewMatrixFromSlice(3, 2, []float64{
+	42, 42,
+	0, 0,
+	114, 114,
+})
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("enter http addresses")
@@ -44,5 +65,11 @@ func main() {
 	if matrix2.CountRows()*matrix2.CountCols() <= 100 {
 		fmt.Println(matrix2)
 	}
-	fmt.Println("SUCCESS")
+
+	matrix, err = client.MultiplyMatrix(matrixFromSlice5, matrixFromSlice6)
+	if !matrix.Equals(res3) {
+		fmt.Println("ERROR")
+	} else {
+		fmt.Println("SUCCESS ^_^")
+	}
 }

@@ -1,12 +1,8 @@
 package etumag1matrix
 
-import (
-	// "encoding/xml"
-	"fmt"
-)
+import "fmt"
 
 type Matrix struct {
-	// XMLName  xml.Name  `xml:"matrix"`
 	Rows     int       `xml:"rows>i4"`      // Number of rows
 	Cols     int       `xml:"cols>i4"`      // Number of columns
 	Elements []float64 `xml:"array>double"` // Matrix stored as a float array: Aij = elements[i*cols + j]
@@ -76,7 +72,7 @@ func (m *Matrix) SetElement(i int, j int, v float64) {
 }
 
 func (m *Matrix) CalcIJ(n int) (int, int) {
-	return (n - n%m.Cols) / m.Rows, n % m.Cols
+	return (n - n%m.Cols) / m.Cols, n % m.Cols
 }
 
 func (m *Matrix) CalcIndex(i, j int) int {
@@ -88,6 +84,7 @@ func (m *Matrix) String() (output string) {
 		if n%m.Cols == 0 {
 			output += "\n"
 		}
+
 		output += fmt.Sprintf("%10.2f", m.GetElement(m.CalcIJ(n)))
 	}
 	return

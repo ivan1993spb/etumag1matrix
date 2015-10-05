@@ -140,3 +140,35 @@ type result struct {
 	index int
 	value float64
 }
+
+func multiplyFast(A, B *etumag1matrix.Matrix) (*etumag1matrix.Matrix, error) {
+	if A.CountCols() != B.CountRows() {
+		return nil, errors.New("number of columns in A is not equal to the number of rows in B")
+	}
+
+	elements := make([]float64, A.Rows*B.Cols)
+	var wg sync.WaitGroup
+	wg.Add(runtime.NumCPU())
+
+	proc := func(n int) {
+		for m := n; m < len(elements); m += runtime.NumCPU() {
+			i, j := (m-m%B.Cols)/B.Cols, m%B.Cols
+			row := A.GetRow(i)
+			col := B.GetCol(j)
+			if len(row) == len(col) {
+				for k := 0; k < len(row); k++ {
+					elements[m] += row[k] * col[k]
+				}
+			}
+		}
+		wg.Done()
+	}
+
+	for n := 0; n < runtime.NumCPU(); n++ {
+		go proc(n)
+	}
+
+	wg.Wait()
+
+	return etumag1matrix.NewMatrixFromSlice(A.CountRows(), B.CountCols(), elements), nil
+}
