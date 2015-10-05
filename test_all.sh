@@ -1,9 +1,6 @@
 #!/bin/bash
 
-goimports -w=true test/*go
-goimports -w=true server2/*go
-goimports -w=true server/*go
-goimports -w=true *go
+goimports -w=true test/*go server2/*go server/*go *go
 
 
 
