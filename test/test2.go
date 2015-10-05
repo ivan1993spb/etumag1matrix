@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	COLS = 20
-	ROWS = 20
+	COLS = 10
+	ROWS = 10
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	matrix := etumag1matrix.NewMatrixFromSlice(COLS, ROWS, elements)
-	client, err := etumag1matrix.NewClient(os.Args[1:]...)
+	client, err := etumag1matrix.NewClient2(os.Args[1])
 
 	fmt.Println("try to multiply matrix")
 

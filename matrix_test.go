@@ -23,11 +23,11 @@ func TestNewEmptyMatrix(t *testing.T) {
 	if emptyMatrix10_12.CountCols() != 12 {
 		t.Error("Matrix.CountCols() fail")
 	}
-	if cap(emptyMatrix10_12.elements) != 10*12 {
-		t.Error("cap(matrix.elements)")
+	if cap(emptyMatrix10_12.Elements) != 10*12 {
+		t.Error("cap(matrix.Elements)")
 	}
-	if len(emptyMatrix10_12.elements) != 0 {
-		t.Error("len(matrix.elements)")
+	if len(emptyMatrix10_12.Elements) != 0 {
+		t.Error("len(matrix.Elements)")
 	}
 }
 
@@ -38,11 +38,11 @@ func TestNewMatrixFromSlice(t *testing.T) {
 	if matrixFromSlice5_6.CountCols() != 6 {
 		t.Error("Matrix.CountCols() fail")
 	}
-	if cap(matrixFromSlice5_6.elements) != 6*5 {
-		t.Error("cap(matrix.elements)")
+	if cap(matrixFromSlice5_6.Elements) != 6*5 {
+		t.Error("cap(matrix.Elements)")
 	}
-	if len(matrixFromSlice5_6.elements) != 6*5 {
-		t.Error("len(matrix.elements)")
+	if len(matrixFromSlice5_6.Elements) != 6*5 {
+		t.Error("len(matrix.Elements)")
 	}
 }
 
@@ -51,33 +51,33 @@ func TestSetGetElement(t *testing.T) {
 	if emptyMatrix10_12.GetElement(10, 12) != 0 {
 		t.Error("Matrix.GetElement() fail")
 	}
-	if cap(emptyMatrix10_12.elements) != 10*12 {
-		t.Error("cap(matrix.elements)")
+	if cap(emptyMatrix10_12.Elements) != 10*12 {
+		t.Error("cap(matrix.Elements)")
 	}
-	if len(emptyMatrix10_12.elements) != 0 {
-		t.Error("len(matrix.elements)")
+	if len(emptyMatrix10_12.Elements) != 0 {
+		t.Error("len(matrix.Elements)")
 	}
 
 	emptyMatrix10_12.SetElement(3, 3, 22)
-	if cap(emptyMatrix10_12.elements) != 10*12 {
-		t.Error("cap(matrix.elements)")
+	if cap(emptyMatrix10_12.Elements) != 10*12 {
+		t.Error("cap(matrix.Elements)")
 	}
-	if len(emptyMatrix10_12.elements) == 3*emptyMatrix10_12.cols+3 {
-		t.Error("len(matrix.elements)")
+	if len(emptyMatrix10_12.Elements) == 3*emptyMatrix10_12.Cols+3 {
+		t.Error("len(matrix.Elements)")
 	}
-	if emptyMatrix10_12.elements[3*emptyMatrix10_12.cols+3] != 22 {
-		t.Error("matrix.elements[i*cols+j] != val")
+	if emptyMatrix10_12.Elements[3*emptyMatrix10_12.Cols+3] != 22 {
+		t.Error("matrix.Elements[i*cols+j] != val")
 	}
 
 	emptyMatrix10_12.SetElement(4, 4, 22)
-	if cap(emptyMatrix10_12.elements) != 10*12 {
-		t.Error("cap(matrix.elements)")
+	if cap(emptyMatrix10_12.Elements) != 10*12 {
+		t.Error("cap(matrix.Elements)")
 	}
-	if len(emptyMatrix10_12.elements) == 4*emptyMatrix10_12.cols+4 {
-		t.Error("len(matrix.elements)")
+	if len(emptyMatrix10_12.Elements) == 4*emptyMatrix10_12.Cols+4 {
+		t.Error("len(matrix.Elements)")
 	}
-	if emptyMatrix10_12.elements[4*emptyMatrix10_12.cols+4] != 22 {
-		t.Error("matrix.elements[i*cols+j] != val")
+	if emptyMatrix10_12.Elements[4*emptyMatrix10_12.Cols+4] != 22 {
+		t.Error("matrix.Elements[i*cols+j] != val")
 	}
 }
 
@@ -116,8 +116,8 @@ func compareFloat64Slices(a, b []float64) bool {
 }
 
 func TestCalcIJ(t *testing.T) {
-	for n := 0; n < len(matrixFromSlice5_6.elements); n++ {
-		if matrixFromSlice5_6.elements[n] != matrixFromSlice5_6.GetElement(matrixFromSlice5_6.CalcIJ(n)) {
+	for n := 0; n < len(matrixFromSlice5_6.Elements); n++ {
+		if matrixFromSlice5_6.Elements[n] != matrixFromSlice5_6.GetElement(matrixFromSlice5_6.CalcIJ(n)) {
 			t.Error("matrix.CalcIJ(n)")
 		}
 	}
