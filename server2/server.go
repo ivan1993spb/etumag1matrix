@@ -147,8 +147,7 @@ func multiplyFast(A, B *etumag1matrix.Matrix) (*etumag1matrix.Matrix, error) {
 	}
 
 	elements := make([]float64, A.Rows*B.Cols)
-	var wg sync.WaitGroup
-	wg.Add(runtime.NumCPU())
+	stopch := make(chan struct{})
 
 	proc := func(n int) {
 		for m := n; m < len(elements); m += runtime.NumCPU() {
@@ -161,14 +160,17 @@ func multiplyFast(A, B *etumag1matrix.Matrix) (*etumag1matrix.Matrix, error) {
 				}
 			}
 		}
-		wg.Done()
+		stopch <- struct{}{}
 	}
 
 	for n := 0; n < runtime.NumCPU(); n++ {
 		go proc(n)
 	}
 
-	wg.Wait()
+	for i := 0; i < runtime.NumCPU(); i++ {
+		<-stopch
+	}
+	close(stopch)
 
 	return etumag1matrix.NewMatrixFromSlice(A.CountRows(), B.CountCols(), elements), nil
 }
