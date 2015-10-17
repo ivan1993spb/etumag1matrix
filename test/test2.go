@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	COLS = 10
-	ROWS = 10
+	COLS = 100
+	ROWS = 100
 )
 
 var matrixFromSlice5 = etumag1matrix.NewMatrixFromSlice(3, 6, []float64{

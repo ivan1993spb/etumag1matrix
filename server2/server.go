@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/ivan1993spb/etumag1matrix"
 )
@@ -29,7 +30,10 @@ func main() {
 
 		var request *multiplyMatrix
 		if err := xml.NewDecoder(r.Body).Decode(&request); err == nil {
-			result, err := multiply(request.A, request.B)
+			t := time.Now()
+			result, err := multiplyFast(request.A, request.B)
+			log.Printf("[%dx%d] X [%dx%d] %s\n", request.A.Cols, request.A.Rows,
+				request.B.Cols, request.B.Rows, time.Since(t))
 			if err != nil {
 				http.Error(w, "Bad request", http.StatusBadRequest)
 			} else {
