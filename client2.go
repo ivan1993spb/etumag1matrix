@@ -25,10 +25,13 @@ func (c *Client2) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 	var buff bytes.Buffer
 
 	buff.WriteString(xml.Header)
+	buff.WriteString(`<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>`)
 
 	if err := xml.NewEncoder(&buff).Encode(&multiplyMatrix{A, B}); err != nil {
 		return nil, err
 	}
+
+	buff.WriteString(`</soap:Body></soap:Envelope>`)
 
 	httpreq, err := http.NewRequest("GET", "http://"+c.addr.String(), &buff)
 	if err != nil {
@@ -39,12 +42,12 @@ func (c *Client2) MultiplyMatrix(A, B *Matrix) (*Matrix, error) {
 		return nil, err
 	}
 
-	var res *multiplyResult
-	if err = xml.NewDecoder(httpresp.Body).Decode(&res); err != nil {
+	var pr *packresp
+	if err = xml.NewDecoder(httpresp.Body).Decode(&pr); err != nil {
 		return nil, err
 	}
 
-	return res.Result, nil
+	return pr.MultRes.Result, nil
 }
 
 func (c *Client2) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix, err error)) {
@@ -55,6 +58,11 @@ func (c *Client2) MultiplyMatrixCallback(A, B *Matrix, callback func(res *Matrix
 
 type multiplyMatrix struct {
 	A, B *Matrix
+}
+
+type packresp struct {
+	XMLName xml.Name        `xml:"Envelope"`
+	MultRes *multiplyResult `xml:"Body>multiplyResult"`
 }
 
 type multiplyResult struct {

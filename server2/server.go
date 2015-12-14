@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"runtime"
@@ -28,16 +29,20 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("accepted connection")
 
-		var request *multiplyMatrix
-		if err := xml.NewDecoder(r.Body).Decode(&request); err == nil {
+		var pr *packreq
+		if err := xml.NewDecoder(r.Body).Decode(&pr); err == nil {
 			t := time.Now()
+			request := pr.MultMatrix
 			result, err := multiplyFast(request.A, request.B)
 			log.Printf("[%dx%d] X [%dx%d] %s\n", request.A.Cols, request.A.Rows,
 				request.B.Cols, request.B.Rows, time.Since(t))
 			if err != nil {
 				http.Error(w, "Bad request", http.StatusBadRequest)
 			} else {
+				fmt.Fprintln(w, xml.Header)
+				fmt.Fprintln(w, `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>`)
 				xml.NewEncoder(w).Encode(&multiplyResult{result})
+				fmt.Fprintln(w, `</soap:Body></soap:Envelope>`)
 			}
 		} else {
 			log.Println(err)
@@ -46,6 +51,11 @@ func main() {
 	})
 
 	log.Fatalln(http.ListenAndServe(addr, nil))
+}
+
+type packreq struct {
+	XMLName    xml.Name        `xml:"Envelope"`
+	MultMatrix *multiplyMatrix `xml:"Body>multiplyMatrix"`
 }
 
 type multiplyMatrix struct {
